@@ -212,24 +212,46 @@ module.exports = {
     await pool.query('DELETE FROM cards WHERE id = $1', [cardId]);
   },
 
+  // Reorder cards within the same list — bulk positional update (mirrors reorderLists)
+  reorderCards: async (listId, orderedIds) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (let i = 0; i < orderedIds.length; i++) {
+        await client.query(
+          'UPDATE cards SET position = $1 WHERE id = $2 AND list_id = $3',
+          [i, orderedIds[i], listId]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  },
+
+  // Move card to a different list — remove from old list, insert at position in new list
   moveCard: async (cardId, newListId, newPosition) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
       const card = await client.query('SELECT * FROM cards WHERE id = $1', [cardId]);
       const oldListId = card.rows[0].list_id;
+      const oldPosition = card.rows[0].position;
 
-      // Shift cards in old list
+      // Close the gap in the old list
       await client.query(
         'UPDATE cards SET position = position - 1 WHERE list_id = $1 AND position > $2',
-        [oldListId, card.rows[0].position]
+        [oldListId, oldPosition]
       );
-      // Make room in new list
+      // Make room in the new list
       await client.query(
         'UPDATE cards SET position = position + 1 WHERE list_id = $1 AND position >= $2',
         [newListId, newPosition]
       );
-      // Move card
+      // Place the card
       await client.query(
         'UPDATE cards SET list_id = $1, position = $2 WHERE id = $3',
         [newListId, newPosition, cardId]

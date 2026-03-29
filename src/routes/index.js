@@ -21,6 +21,7 @@ router.put('/boards/:boardId/lists/reorder', lc.reorderLists);
 
 // Cards
 router.post('/lists/:listId/cards', cc.createCard);
+router.put('/lists/:listId/cards/reorder', cc.reorderCards);
 router.get('/cards/:id', cc.getCard);
 router.put('/cards/:id', cc.updateCard);
 router.delete('/cards/:id', cc.deleteCard);

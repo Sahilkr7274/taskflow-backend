@@ -39,6 +39,17 @@ exports.deleteCard = async (req, res) => {
   }
 };
 
+exports.reorderCards = async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) return res.status(400).json({ error: 'orderedIds must be an array' });
+    await db.reorderCards(req.params.listId, orderedIds);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
 exports.moveCard = async (req, res) => {
   try {
     const { listId, position } = req.body;
