@@ -7,6 +7,7 @@ const uc = require('../controllers/userController');
 // Boards
 router.get('/boards', bc.getBoards);
 router.post('/boards', bc.createBoard);
+router.post('/boards/template', bc.createBoardFromTemplate);
 router.get('/boards/:id', bc.getBoard);
 router.put('/boards/:id', bc.updateBoard);
 router.delete('/boards/:id', bc.deleteBoard);

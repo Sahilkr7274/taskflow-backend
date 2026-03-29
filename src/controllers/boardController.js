@@ -32,6 +32,18 @@ exports.createBoard = async (req, res) => {
   }
 };
 
+exports.createBoardFromTemplate = async (req, res) => {
+  try {
+    const { title, background, lists } = req.body;
+    if (!title) return res.status(400).json({ error: 'Title is required' });
+    if (!lists || !Array.isArray(lists)) return res.status(400).json({ error: 'Lists are required' });
+    const board = await db.createBoardFromTemplate(title, background, DEFAULT_USER_ID, lists);
+    res.status(201).json(board);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
 exports.updateBoard = async (req, res) => {
   try {
     const board = await db.updateBoard(req.params.id, req.body.title, req.body.background);

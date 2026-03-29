@@ -104,6 +104,38 @@ module.exports = {
     return res.rows[0];
   },
 
+  createBoardFromTemplate: async (title, background, userId, lists) => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const boardRes = await client.query(
+        'INSERT INTO boards (title, background, owner_id) VALUES ($1, $2, $3) RETURNING *',
+        [title, background || 'gradient-blue', userId]
+      );
+      const board = boardRes.rows[0];
+      for (let li = 0; li < lists.length; li++) {
+        const listRes = await client.query(
+          'INSERT INTO lists (title, position, board_id) VALUES ($1, $2, $3) RETURNING id',
+          [lists[li].title, li, board.id]
+        );
+        const listId = listRes.rows[0].id;
+        for (let ci = 0; ci < (lists[li].cards || []).length; ci++) {
+          await client.query(
+            'INSERT INTO cards (title, position, list_id) VALUES ($1, $2, $3)',
+            [lists[li].cards[ci], ci, listId]
+          );
+        }
+      }
+      await client.query('COMMIT');
+      return board;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  },
+
   updateBoard: async (boardId, title, background) => {
     const res = await pool.query(
       'UPDATE boards SET title = COALESCE($1, title), background = COALESCE($2, background) WHERE id = $3 RETURNING *',
